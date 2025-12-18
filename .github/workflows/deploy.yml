@@ -7,6 +7,11 @@ on:
         description: 'The IP address to whitelist for SSH access (e.g., 1.2.3.4/32). Leave empty to use the runner IP (not recommended as it changes).'
         required: false
         type: string
+      apply_terraform:
+        description: 'Whether to apply the changes. Uncheck for a dry run (plan only).'
+        required: true
+        type: boolean
+        default: true
 
 permissions:
   id-token: write
@@ -46,4 +51,5 @@ jobs:
         fi
 
     - name: Terraform Apply
+      if: ${{ inputs.apply_terraform == true }}
       run: terraform apply -auto-approve tfplan
