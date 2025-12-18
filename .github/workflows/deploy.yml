@@ -1,0 +1,49 @@
+name: Deploy Homelab Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      ssh_source_ip:
+        description: 'The IP address to whitelist for SSH access (e.g., 1.2.3.4/32). Leave empty to use the runner IP (not recommended as it changes).'
+        required: false
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Plan
+      run: |
+        if [ -n "${{ inputs.ssh_source_ip }}" ]; then
+          terraform plan -var="ssh_source_ip=${{ inputs.ssh_source_ip }}" -out=tfplan
+        else
+          terraform plan -out=tfplan
+        fi
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve tfplan

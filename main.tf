@@ -12,9 +12,9 @@ resource "azurerm_virtual_network" "homelab_vnet" {
 }
 
 resource "azurerm_subnet" "homelab_subnet" {
-  address_prefixes    = ["10.0.0.0/24"]
-  name                = "homelab-subnet"
-  resource_group_name = azurerm_resource_group.homelab_rg.name
+  address_prefixes     = ["10.0.0.0/24"]
+  name                 = "homelab-subnet"
+  resource_group_name  = azurerm_resource_group.homelab_rg.name
   virtual_network_name = azurerm_virtual_network.homelab_vnet.name
 }
 
@@ -36,7 +36,7 @@ resource "azurerm_network_security_rule" "allow_ssh" {
   protocol                    = "Tcp"
   source_port_range           = "*"
   destination_port_range      = "22"
-  source_address_prefix       = "${chomp(data.http.my_ip.response_body)}/32"  # Use your dynamic IP
+  source_address_prefix       = var.ssh_source_ip != null ? var.ssh_source_ip : "${chomp(data.http.my_ip.response_body)}/32"
   destination_address_prefix  = "*"
   resource_group_name         = azurerm_resource_group.homelab_rg.name
   network_security_group_name = azurerm_network_security_group.homelab_nsg.name
@@ -48,7 +48,7 @@ resource "azurerm_subnet_network_security_group_association" "homelab_nsg_assoc"
 }
 
 data "azurerm_ssh_public_key" "existing_ssh" {
-  name                = "homelab-vm-ssh-key"
+  name                = "homelab-vm-ssh-key-2"
   resource_group_name = "do-not-delete"
 }
 
@@ -82,7 +82,7 @@ resource "azurerm_linux_virtual_machine" "homelab_vm" {
   name                = "homelab-vm"
   location            = azurerm_resource_group.homelab_rg.location
   resource_group_name = azurerm_resource_group.homelab_rg.name
-  size                = "Standard_B2s"  # Cost-effective for homelabs
+  size                = "Standard_B2s" # Cost-effective for homelabs
   admin_username      = "azureuser"
 
   network_interface_ids = [azurerm_network_interface.vm_nic.id]
@@ -92,7 +92,7 @@ resource "azurerm_linux_virtual_machine" "homelab_vm" {
     public_key = data.azurerm_ssh_public_key.existing_ssh.public_key
   }
 
-  disable_password_authentication = true  # Enforce SSH key-based authentication
+  disable_password_authentication = true # Enforce SSH key-based authentication
 
   os_disk {
     name                 = "homelab-vm-osdisk"
