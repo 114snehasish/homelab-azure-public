@@ -3,6 +3,10 @@ name: Deploy Network
 on:
   workflow_dispatch:
     inputs:
+      ssh_source_ip:
+        description: 'The IP address to whitelist for SSH access (e.g., 1.2.3.4/32). Leave empty to use the runner IP (not recommended as it changes).'
+        required: false
+        type: string
       apply:
         description: 'Applying the changes'
         type: boolean
@@ -21,10 +25,10 @@ jobs:
     name: Terraform Network
     runs-on: ubuntu-latest
     env:
-      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
 
     steps:
       - name: Checkout Code
@@ -40,7 +44,12 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: |
+          if [ -n "${{ inputs.ssh_source_ip }}" ]; then
+            terraform plan -var="ssh_source_ip=${{ inputs.ssh_source_ip }}" -out=tfplan
+          else
+            terraform plan -out=tfplan
+          fi
 
       - name: Terraform Apply
         if: github.event_name == 'workflow_dispatch' && inputs.apply == true
