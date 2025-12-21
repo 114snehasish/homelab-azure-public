@@ -1,65 +1,79 @@
-# Azure Homelab Setup
+# Homelab Azure Infrastructure
 
-This repository contains the configuration files and scripts to set up an Azure Homelab using Terraform and GitHub Actions.
+This repository contains the Terraform infrastructure for the Homelab.
+It has been modularized to allow independent lifecycle management of resources.
 
-## Prerequisites
+## Modules
 
-- [Terraform](https://www.terraform.io/downloads.html) installed
-- [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) installed
-- [GitHub CLI](https://cli.github.com/) installed
-- An Azure account
-- A GitHub account
+### 1. `infra/network` (Persistent)
+Contains the "skeleton" of the infrastructure:
+- Resource Group (`homelab-rg`)
+- Virtual Network (`homelab-vnet`)
+- Subnet (`homelab-subnet`)
+- Network Security Group (`homelab-nsg-for-vm`)
 
-## Repository Structure
+**Run this first.** These resources are persistent and rarely change.
 
-- `main.tf`: Main Terraform configuration file
-- `variables.tf`: Variables used in the Terraform configuration
-- `outputs.tf`: Outputs of the Terraform configuration
-- `.github/workflows/`: Directory containing GitHub Actions workflows
+### 2. `infra/storage` (Persistent)
+Contains persistent data resources:
+- Managed Data Disk (`homelab-data-disk`)
 
-## Setup Instructions
+**Run this second.** This disk persists independently of the VM to ensure data safety.
 
-1. **Clone the repository:**
-    ```sh
-    git clone https://github.com/yourusername/homelab-azure.git
-    cd homelab-azure
-    ```
+### 3. `compute/vm` (Ephemeral)
+Contains the compute resources:
+- Virtual Machine (`homelab-vm`)
+- Network Interface (`homelab-vm-nic`)
+- Public IP (`homelab-vm-public-ip`)
 
-2. **Configure Azure CLI:**
-    ```sh
-    az login
-    ```
+**Run this last.** You can destroy and recreate this module freely. The Data Disk from `infra/storage` will be automatically re-attached.
 
-3. **Initialize Terraform:**
-    ```sh
-    terraform init
-    ```
+## Usage
 
-4. **Apply Terraform configuration:**
-    ```sh
-    terraform apply
-    ```
+### Prerequisites
+- Azure CLI installed and logged in (`az login`).
+- Terraform installed.
 
-5. **Set up GitHub Actions:**
-    - Create a new repository on GitHub and push your code.
-    - Add the following secrets to your GitHub repository:
-        - `AZURE_CLIENT_ID`
-        - `AZURE_CLIENT_SECRET`
-        - `AZURE_SUBSCRIPTION_ID`
-        - `AZURE_TENANT_ID`
+### Deploying
+Run the following commands in order:
 
-## GitHub Actions Workflow
+```bash
+# 1. Deploy Network
+cd infra/network
+terraform init
+terraform apply
 
-The GitHub Actions workflow is defined in `.github/workflows/terraform.yml`. It automates the deployment of your Azure resources using Terraform.
+# 2. Deploy Storage
+cd ../../infra/storage
+terraform init
+terraform apply
 
-## Contributing
+# 3. Deploy Compute
+cd ../../compute/vm
+terraform init
+terraform apply
+```
 
-Contributions are welcome! Please open an issue or submit a pull request.
+### Destroying
+To save costs (destroy VM/IP) but keep data/network:
 
-## License
+```bash
+cd compute/vm
+terraform destroy
+```
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+To destroy EVERYTHING (Danger Zone):
+```bash
+# Destroy in reverse order
+cd compute/vm && terraform destroy
+cd ../../infra/storage && terraform destroy
+cd ../../infra/network && terraform destroy
+```
 
-## Contact
-
-For any questions or suggestions, please open an issue or contact me at [your-email@example.com].
+## CI/CD
+GitHub Actions workflows are provided in `.github/workflows/` to automate deployment on push to `main`.
+Ensure the following Secrets are set in your GitHub Repository:
+- `AZURE_CLIENT_ID`
+- `AZURE_CLIENT_SECRET`
+- `AZURE_SUBSCRIPTION_ID`
+- `AZURE_TENANT_ID`

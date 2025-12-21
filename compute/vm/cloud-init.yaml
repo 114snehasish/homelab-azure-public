@@ -1,0 +1,73 @@
+#cloud-config
+package_upgrade: true
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+
+write_files:
+  - path: /etc/apt/keyrings/docker.asc
+    permissions: '0644'
+    owner: root:root
+    encoding: b64
+    content: |
+      mQINBFit2ioBEADhWpZ8/39X3... (Note: This is usually fetched via curl, simplified below)
+
+runcmd:
+  # 1. Setup Disk (Inline Script)
+  - |
+    set -x
+    (
+      echo "Starting Disk Setup..."
+      # Wait for disk - naive check for sdc first (common for data disk 0)
+      DISK="/dev/sdc"
+      
+      # Try to find by LUN if possible
+      if [ -e /dev/disk/azure/scsi1/lun10 ]; then
+        DISK=$(readlink -f /dev/disk/azure/scsi1/lun10)
+      fi
+      
+      echo "Using disk: $DISK"
+      
+      # Partition if needed
+      if ! lsblk $DISK | grep -q "part"; then
+        echo "Partitioning $DISK..."
+        parted -s $DISK mklabel gpt
+        parted -s $DISK mkpart primary ext4 0% 100%
+        partprobe $DISK
+        sleep 5
+      fi
+      
+      PARTITION="${DISK}1"
+      
+      # Format if needed
+      # Check if filesystem exists (blkid returns part info even without FS, so we grep for TYPE)
+      if ! blkid $PARTITION | grep -q 'TYPE='; then
+        echo "Formatting $PARTITION..."
+        mkfs.ext4 $PARTITION
+      fi
+      
+      # Create Mount Point
+      mkdir -p /var/lib/docker
+      
+      # Mount
+      if ! mountpoint -q /var/lib/docker; then
+        mount $PARTITION /var/lib/docker
+        echo "$PARTITION /var/lib/docker ext4 defaults,nofail 0 2" >> /etc/fstab
+      fi
+      
+      echo "Disk Setup Complete."
+    ) > /var/log/disk-setup.log 2>&1
+
+  # 2. Add Docker's official GPG key:
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+
+  # 3. Add the repository to Apt sources:
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  # 4. Post-install steps
+  - usermod -aG docker azureuser
