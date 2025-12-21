@@ -1,79 +1,67 @@
-# Homelab Azure Infrastructure
+# My Azure Homelab: The Foundation
 
-This repository contains the Terraform infrastructure for the Homelab.
-It has been modularized to allow independent lifecycle management of resources.
+This repository contains the **foundational infrastructure** for my evolving homelab on Azure. 
 
-## Modules
+I am building this project as a modular base layer. While the current setup focuses on establishing a robust, persistent Compute and Storage architecture, it is designed to be the bedrock for a much larger, more complex ecosystem that I am actively developing.
 
-### 1. `infra/network` (Persistent)
-Contains the "skeleton" of the infrastructure:
-- Resource Group (`homelab-rg`)
-- Virtual Network (`homelab-vnet`)
-- Subnet (`homelab-subnet`)
-- Network Security Group (`homelab-nsg-for-vm`)
+## 🚧 Status: Phase 1 (Core Infrastructure)
 
-**Run this first.** These resources are persistent and rarely change.
+This is just the beginning. I have established the essential primitives—networking, state management, and persistence—to support the advanced capabilities (service meshes, managed databases, complex topologies) that will follow.
 
-### 2. `infra/storage` (Persistent)
-Contains persistent data resources:
-- Managed Data Disk (`homelab-data-disk`)
+What I have solved so far:
+- **Modular Autonomy**: Decoupling the lifecycle of "muscle" (Compute) from "memory" (Storage).
+- **Hardened Persistence**: Ensuring data survival independent of infrastructure volatility.
+- **Bootstrapping**: Automating the "Day 0" configuration of disposable nodes.
 
-**Run this second.** This disk persists independently of the VM to ensure data safety.
+## 📚 Documentation
 
-### 3. `compute/vm` (Ephemeral)
-Contains the compute resources:
-- Virtual Machine (`homelab-vm`)
-- Network Interface (`homelab-vm-nic`)
-- Public IP (`homelab-vm-public-ip`)
+I have put comprehensive documentation under the `docs/` directory to help you understand this foundational layer:
 
-**Run this last.** You can destroy and recreate this module freely. The Data Disk from `infra/storage` will be automatically re-attached.
+- **[📖 Conceptual Guide](docs/conceptual_guide.md)**  
+  *Read this first!* Here I explain the architectural philosophy I am using to prepare for scale, including:
+  - Why I treat this early infrastructure as "Cattle, Not Pets".
+  - My "Split Disk Strategy" for long-term data safety.
+  - The `cloud-init` patterns I'm establishing for future flexibility.
 
-## Usage
+- **[⚙️ Technical Reference](docs/technical_reference.md)**  
+  My personal API reference for the current core modules.
+
+## 🚀 Quick Start (The Base Layer)
 
 ### Prerequisites
-- Azure CLI installed and logged in (`az login`).
-- Terraform installed.
+- Azure CLI
+- Terraform v1.x
+- GitHub Account (for my CI/CD pipelines)
 
-### Deploying
-Run the following commands in order:
+### Deployment Order
+To lay this foundation, I deploy the modules in this specific dependency order:
 
-```bash
-# 1. Deploy Network
-cd infra/network
-terraform init
-terraform apply
+1.  **Network** (`infra/network`)  
+    Establishing the perimeter and address space.
+    ```bash
+    cd infra/network
+    terraform init
+    terraform apply
+    ```
 
-# 2. Deploy Storage
-cd ../../infra/storage
-terraform init
-terraform apply
+2.  **Storage** (`infra/storage`)  
+    Provisioning the persistent data layer.
+    ```bash
+    cd ../../infra/storage
+    terraform init
+    terraform apply
+    ```
 
-# 3. Deploy Compute
-cd ../../compute/vm
-terraform init
-terraform apply
-```
+3.  **Compute** (`compute/vm`)  
+    Spinning up the initial workload node.
+    ```bash
+    cd ../../compute/vm
+    terraform init
+    terraform apply
+    ```
 
-### Destroying
-To save costs (destroy VM/IP) but keep data/network:
+### Verification
+Once deployed, I verify that the core is healthy and persistent. See my **[✅ Verification Guide](docs/verification_guide.md)** for the procedure.
 
-```bash
-cd compute/vm
-terraform destroy
-```
-
-To destroy EVERYTHING (Danger Zone):
-```bash
-# Destroy in reverse order
-cd compute/vm && terraform destroy
-cd ../../infra/storage && terraform destroy
-cd ../../infra/network && terraform destroy
-```
-
-## CI/CD
-GitHub Actions workflows are provided in `.github/workflows/` to automate deployment on push to `main`.
-Ensure the following Secrets are set in your GitHub Repository:
-- `AZURE_CLIENT_ID`
-- `AZURE_CLIENT_SECRET`
-- `AZURE_SUBSCRIPTION_ID`
-- `AZURE_TENANT_ID`
+### CI/CD
+I manage these core deployments via GitHub Actions in `.github/workflows/`.
