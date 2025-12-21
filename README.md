@@ -1,79 +1,56 @@
-# Homelab Azure Infrastructure
+# My Homelab on Azure with Terraform
 
-This repository contains the Terraform infrastructure for the Homelab.
-It has been modularized to allow independent lifecycle management of resources.
+This project allows me to provision a modular, persistent homelab environment on Azure using Terraform and GitHub Actions. I built this to have full control over my infrastructure with the ability to destroy and recreate compute resources without losing my data.
 
-## Modules
+## 📚 Documentation
 
-### 1. `infra/network` (Persistent)
-Contains the "skeleton" of the infrastructure:
-- Resource Group (`homelab-rg`)
-- Virtual Network (`homelab-vnet`)
-- Subnet (`homelab-subnet`)
-- Network Security Group (`homelab-nsg-for-vm`)
+I have put comprehensive documentation under the `docs/` directory to help you understand my setup:
 
-**Run this first.** These resources are persistent and rarely change.
+- **[📖 Conceptual Guide](docs/conceptual_guide.md)**  
+  *Read this first!* Here I explain the "Why" and "How" behind my architectural decisions, including:
+  - My "Cattle, Not Pets" philosophy.
+  - How I persist Docker data even when destroying the VM ("Split Disk Strategy").
+  - How I use `cloud-init` to automate the bootstrapping process.
 
-### 2. `infra/storage` (Persistent)
-Contains persistent data resources:
-- Managed Data Disk (`homelab-data-disk`)
+- **[⚙️ Technical Reference](docs/technical_reference.md)**  
+  My personal API reference for the codebase. I listed all Modules, Resources, Variables, and Outputs that I use.
 
-**Run this second.** This disk persists independently of the VM to ensure data safety.
-
-### 3. `compute/vm` (Ephemeral)
-Contains the compute resources:
-- Virtual Machine (`homelab-vm`)
-- Network Interface (`homelab-vm-nic`)
-- Public IP (`homelab-vm-public-ip`)
-
-**Run this last.** You can destroy and recreate this module freely. The Data Disk from `infra/storage` will be automatically re-attached.
-
-## Usage
+## 🚀 Quick Start
 
 ### Prerequisites
-- Azure CLI installed and logged in (`az login`).
-- Terraform installed.
+- Azure CLI
+- Terraform v1.x
+- GitHub Account (for my CI/CD pipelines)
 
-### Deploying
-Run the following commands in order:
+### Deployment Order
+Since I designed this as a modular architecture, I must create resources in this specific dependency order:
 
-```bash
-# 1. Deploy Network
-cd infra/network
-terraform init
-terraform apply
+1.  **Network** (`infra/network`)  
+    I start here to create the VNet and Resource Group.
+    ```bash
+    cd infra/network
+    terraform init
+    terraform apply
+    ```
 
-# 2. Deploy Storage
-cd ../../infra/storage
-terraform init
-terraform apply
+2.  **Storage** (`infra/storage`)  
+    Next, I create the Persistent Data Disk.
+    ```bash
+    cd ../../infra/storage
+    terraform init
+    terraform apply
+    ```
 
-# 3. Deploy Compute
-cd ../../compute/vm
-terraform init
-terraform apply
-```
+3.  **Compute** (`compute/vm`)  
+    Finally, I spin up the VM, attach my disk, and install Docker.
+    ```bash
+    cd ../../compute/vm
+    terraform init
+    terraform apply
+    ```
 
-### Destroying
-To save costs (destroy VM/IP) but keep data/network:
+### Verification
+Once deployed, I SSH into my VM (`terraform output ssh_command`) and check that Docker is running and my persistence strategy is active. See [Walkthrough Artifact](.gemini/antigravity/brain/c804c037-79cb-410f-be72-bd4f1152b3bb/walkthrough.md) for details.
 
-```bash
-cd compute/vm
-terraform destroy
-```
-
-To destroy EVERYTHING (Danger Zone):
-```bash
-# Destroy in reverse order
-cd compute/vm && terraform destroy
-cd ../../infra/storage && terraform destroy
-cd ../../infra/network && terraform destroy
-```
-
-## CI/CD
-GitHub Actions workflows are provided in `.github/workflows/` to automate deployment on push to `main`.
-Ensure the following Secrets are set in your GitHub Repository:
-- `AZURE_CLIENT_ID`
-- `AZURE_CLIENT_SECRET`
-- `AZURE_SUBSCRIPTION_ID`
-- `AZURE_TENANT_ID`
+### CI/CD
+I manage my deployments via GitHub Actions in `.github/workflows/`. I make sure variables `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, `ARM_SUBSCRIPTION_ID`, and `ARM_TENANT_ID` are set in my GitHub Secrets.
