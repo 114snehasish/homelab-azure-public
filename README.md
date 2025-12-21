@@ -1,21 +1,32 @@
-# My Homelab on Azure with Terraform
+# My Azure Homelab: The Foundation
 
-This project allows me to provision a modular, persistent homelab environment on Azure using Terraform and GitHub Actions. I built this to have full control over my infrastructure with the ability to destroy and recreate compute resources without losing my data.
+This repository contains the **foundational infrastructure** for my evolving homelab on Azure. 
+
+I am building this project as a modular base layer. While the current setup focuses on establishing a robust, persistent Compute and Storage architecture, it is designed to be the bedrock for a much larger, more complex ecosystem that I am actively developing.
+
+## 🚧 Status: Phase 1 (Core Infrastructure)
+
+This is just the beginning. I have established the essential primitives—networking, state management, and persistence—to support the advanced capabilities (service meshes, managed databases, complex topologies) that will follow.
+
+What I have solved so far:
+- **Modular Autonomy**: Decoupling the lifecycle of "muscle" (Compute) from "memory" (Storage).
+- **Hardened Persistence**: Ensuring data survival independent of infrastructure volatility.
+- **Bootstrapping**: Automating the "Day 0" configuration of disposable nodes.
 
 ## 📚 Documentation
 
-I have put comprehensive documentation under the `docs/` directory to help you understand my setup:
+I have put comprehensive documentation under the `docs/` directory to help you understand this foundational layer:
 
 - **[📖 Conceptual Guide](docs/conceptual_guide.md)**  
-  *Read this first!* Here I explain the "Why" and "How" behind my architectural decisions, including:
-  - My "Cattle, Not Pets" philosophy.
-  - How I persist Docker data even when destroying the VM ("Split Disk Strategy").
-  - How I use `cloud-init` to automate the bootstrapping process.
+  *Read this first!* Here I explain the architectural philosophy I am using to prepare for scale, including:
+  - Why I treat this early infrastructure as "Cattle, Not Pets".
+  - My "Split Disk Strategy" for long-term data safety.
+  - The `cloud-init` patterns I'm establishing for future flexibility.
 
 - **[⚙️ Technical Reference](docs/technical_reference.md)**  
-  My personal API reference for the codebase. I listed all Modules, Resources, Variables, and Outputs that I use.
+  My personal API reference for the current core modules.
 
-## 🚀 Quick Start
+## 🚀 Quick Start (The Base Layer)
 
 ### Prerequisites
 - Azure CLI
@@ -23,10 +34,10 @@ I have put comprehensive documentation under the `docs/` directory to help you u
 - GitHub Account (for my CI/CD pipelines)
 
 ### Deployment Order
-Since I designed this as a modular architecture, I must create resources in this specific dependency order:
+To lay this foundation, I deploy the modules in this specific dependency order:
 
 1.  **Network** (`infra/network`)  
-    I start here to create the VNet and Resource Group.
+    Establishing the perimeter and address space.
     ```bash
     cd infra/network
     terraform init
@@ -34,7 +45,7 @@ Since I designed this as a modular architecture, I must create resources in this
     ```
 
 2.  **Storage** (`infra/storage`)  
-    Next, I create the Persistent Data Disk.
+    Provisioning the persistent data layer.
     ```bash
     cd ../../infra/storage
     terraform init
@@ -42,7 +53,7 @@ Since I designed this as a modular architecture, I must create resources in this
     ```
 
 3.  **Compute** (`compute/vm`)  
-    Finally, I spin up the VM, attach my disk, and install Docker.
+    Spinning up the initial workload node.
     ```bash
     cd ../../compute/vm
     terraform init
@@ -50,7 +61,7 @@ Since I designed this as a modular architecture, I must create resources in this
     ```
 
 ### Verification
-Once deployed, I SSH into my VM (`terraform output ssh_command`) and check that Docker is running and my persistence strategy is active. See [Walkthrough Artifact](.gemini/antigravity/brain/c804c037-79cb-410f-be72-bd4f1152b3bb/walkthrough.md) for details.
+Once deployed, I verify that the core is healthy and persistent. See my **[✅ Verification Guide](docs/verification_guide.md)** for the procedure.
 
 ### CI/CD
-I manage my deployments via GitHub Actions in `.github/workflows/`. I make sure variables `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, `ARM_SUBSCRIPTION_ID`, and `ARM_TENANT_ID` are set in my GitHub Secrets.
+I manage these core deployments via GitHub Actions in `.github/workflows/`.
