@@ -46,6 +46,19 @@ resource "azurerm_public_ip" "vm_public_ip" {
   sku                 = "Standard"
 }
 
+data "azurerm_dns_zone" "homelab" {
+  name                = var.dns_zone_name
+  resource_group_name = var.dns_rg_name
+}
+
+resource "azurerm_dns_a_record" "vm_record" {
+  name                = "homelab-vm"
+  zone_name           = data.azurerm_dns_zone.homelab.name
+  resource_group_name = var.dns_rg_name
+  ttl                 = 300
+  target_resource_id  = azurerm_public_ip.vm_public_ip.id
+}
+
 resource "azurerm_network_interface" "vm_nic" {
   name                = "homelab-vm-nic"
   location            = data.azurerm_resource_group.rg.location

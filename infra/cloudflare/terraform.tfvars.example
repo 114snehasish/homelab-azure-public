@@ -1,0 +1,4 @@
+azure_dns_zone_name  = "az.example.com"           # subdomain delegated to Azure DNS
+azure_rg_name        = "my-resource-group"        # RG containing the Azure DNS zone
+cloudflare_api_token = "your-cloudflare-api-token" # or pass via TF_VAR_cloudflare_api_token
+cloudflare_zone_id   = "your-cloudflare-zone-id"   # or pass via TF_VAR_cloudflare_zone_id
