@@ -36,6 +36,8 @@ I have put comprehensive documentation under the `docs/` directory to help you u
 ### Deployment Order
 To lay this foundation, I deploy the modules in this specific dependency order:
 
+**Note:** Ensure you have set the required secrets in GitHub and created `terraform.tfvars` locally (copy from `.example`).
+
 1.  **Network** (`infra/network`)  
     Establishing the perimeter and address space.
     ```bash
@@ -44,7 +46,23 @@ To lay this foundation, I deploy the modules in this specific dependency order:
     terraform apply
     ```
 
-2.  **Storage** (`infra/storage`)  
+2.  **DNS** (`infra/dns`)
+    Creating the Azure DNS Zone.
+    ```bash
+    cd ../../infra/dns
+    terraform init
+    terraform apply
+    ```
+
+3.  **Cloudflare** (`infra/cloudflare`)
+    Delegating the subdomain to Azure DNS.
+    ```bash
+    cd ../../infra/cloudflare
+    terraform init
+    terraform apply
+    ```
+
+4.  **Storage** (`infra/storage`)  
     Provisioning the persistent data layer.
     ```bash
     cd ../../infra/storage
@@ -52,7 +70,7 @@ To lay this foundation, I deploy the modules in this specific dependency order:
     terraform apply
     ```
 
-3.  **Compute** (`compute/vm`)  
+5.  **Compute** (`compute/vm`)  
     Spinning up the initial workload node.
     ```bash
     cd ../../compute/vm
