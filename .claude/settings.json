@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Write|Edit|MultiEdit|NotebookEdit|Bash|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-env.js\"",
+            "timeout": 10,
+            "statusMessage": "Checking for .env access"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; case \"$f\" in *.tf|*.tfvars) terraform fmt \"$f\";; esac; } 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Running terraform fmt"
+          }
+        ]
+      }
+    ]
+  }
+}
