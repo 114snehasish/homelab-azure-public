@@ -1,0 +1,4 @@
+azure_dns_zone_name = "az.snehasish-chakraborty.com"
+azure_rg_name       = "homelab-rg"
+# cloudflare_api_token = "..." # passed via env
+# cloudflare_zone_id   = "..." # passed via env
