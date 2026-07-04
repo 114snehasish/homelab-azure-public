@@ -6,6 +6,17 @@ on:
       - 'infra/cloudflare/**'
       - '.github/workflows/deploy-cloudflare.yml'
   workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Applying the changes'
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      apply:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   deploy-cloudflare:
@@ -38,5 +49,5 @@ jobs:
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name != 'push' && inputs.apply == true)
         run: terraform apply -auto-approve tfplan
