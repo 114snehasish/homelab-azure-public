@@ -11,6 +11,15 @@ on:
         description: 'Applying the changes'
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      ssh_source_ip:
+        required: false
+        type: string
+      apply:
+        required: false
+        type: boolean
+        default: false
   push:
     paths:
       - 'infra/network/**'
@@ -52,5 +61,5 @@ jobs:
           fi
 
       - name: Terraform Apply
-        if: github.event_name == 'workflow_dispatch' && inputs.apply == true
+        if: inputs.apply == true
         run: terraform apply -auto-approve tfplan

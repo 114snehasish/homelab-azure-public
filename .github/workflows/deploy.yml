@@ -17,39 +17,46 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: homelab-terraform
+
 jobs:
-  terraform:
-    name: 'Terraform'
-    runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        shell: bash
+  network:
+    name: Network
+    uses: ./.github/workflows/deploy-network.yml
+    secrets: inherit
+    with:
+      ssh_source_ip: ${{ inputs.ssh_source_ip }}
+      apply: ${{ inputs.apply_terraform }}
 
-    env:
-      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+  dns:
+    name: DNS
+    needs: network
+    uses: ./.github/workflows/deploy-dns.yml
+    secrets: inherit
+    with:
+      apply: ${{ inputs.apply_terraform }}
 
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+  cloudflare:
+    name: Cloudflare
+    needs: dns
+    uses: ./.github/workflows/deploy-cloudflare.yml
+    secrets: inherit
+    with:
+      apply: ${{ inputs.apply_terraform }}
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
+  storage:
+    name: Storage
+    needs: cloudflare
+    uses: ./.github/workflows/deploy-storage.yml
+    secrets: inherit
+    with:
+      apply: ${{ inputs.apply_terraform }}
 
-    - name: Terraform Init
-      run: terraform init
-
-    - name: Terraform Plan
-      run: |
-        if [ -n "${{ inputs.ssh_source_ip }}" ]; then
-          terraform plan -var="ssh_source_ip=${{ inputs.ssh_source_ip }}" -out=tfplan
-        else
-          terraform plan -out=tfplan
-        fi
-
-    - name: Terraform Apply
-      if: ${{ inputs.apply_terraform == true }}
-      run: terraform apply -auto-approve tfplan
+  compute:
+    name: Compute
+    needs: storage
+    uses: ./.github/workflows/deploy-compute.yml
+    secrets: inherit
+    with:
+      apply: ${{ inputs.apply_terraform }}

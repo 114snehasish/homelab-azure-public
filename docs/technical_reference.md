@@ -63,7 +63,18 @@ The bootstrapping script is designed to:
 
 ## 5. CI/CD Workflows
 
-These pipelines orchestrate the deployment of the core blocks:
+### Per-module pipelines
+
+Each module has its own workflow, runnable standalone (push with path filter, or manual dispatch) and callable as a reusable workflow (`workflow_call`):
 - **`deploy-network.yml`**: Deploys the backbone.
+- **`deploy-dns.yml`**: Creates the Azure DNS zone.
+- **`deploy-cloudflare.yml`**: Delegates the subdomain from Cloudflare to Azure DNS.
 - **`deploy-storage.yml`**: Provisions the vaults.
 - **`deploy-compute.yml`**: Launches the nodes.
+
+### Overall pipelines
+
+- **`deploy.yml`** (manual dispatch): calls the five per-module workflows in dependency order — network → dns → cloudflare → storage → compute — with `secrets: inherit`. The `apply_terraform` checkbox gates apply in every module job; unchecked runs a plan-only dry run across all five modules.
+- **`destroy.yml`** (manual dispatch): tears down billable resources in reverse order — compute → cloudflare → dns. It deliberately **skips storage** (the persistent data disk) and **network**: the disk lives inside `homelab-rg`, so the network module cannot be destroyed while the disk exists, and the remaining VNet/subnet/NSG/RG are free. The `apply_destroy` checkbox (default unchecked) gates the actual destroy; unchecked runs `plan -destroy` dry runs only.
+
+Both overall pipelines share the `homelab-terraform` concurrency group so a deploy and a destroy can never run at the same time.

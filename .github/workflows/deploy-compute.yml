@@ -7,6 +7,12 @@ on:
         description: 'Applying the changes'
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      apply:
+        required: false
+        type: boolean
+        default: false
   push:
     paths:
       - 'compute/vm/**'
@@ -45,5 +51,5 @@ jobs:
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply
-        if: github.event_name == 'workflow_dispatch' && inputs.apply == true
+        if: inputs.apply == true
         run: terraform apply -auto-approve tfplan
