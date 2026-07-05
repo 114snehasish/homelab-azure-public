@@ -6,6 +6,8 @@
 
 Grow this five-module Terraform homelab into a **mini-enterprise** while learning DevOps, platform engineering, and app engineering. The platform journey is deliberately **simplest-first**: Docker-Compose-as-code → single-node k3s with GitOps → an AKS pilot (stretch). Pillar priority: **apps with HTTPS and real domains** → **security & identity** → **observability** → **resilience & governance**.
 
+**Operating model (clarified 2026-07-05): compute is ephemeral, storage is not.** The lab is not 24×7 — it runs in *experience cycles*: deploy everything, use it, then **park** it (final backup → destroy the VM, the only real cost driver). The only things that survive a cycle are the persistence layer (app data, databases, metrics/logs history, TLS certs) and the near-free control plane (tfstate, Key Vault, DNS zone, network RG). Parked cost target: **≤ ₹400/mo**. E15 exists to make this lifecycle first-class.
+
 ## Decisions made for this roadmap
 
 Two long-standing "ask first" inconsistencies from CLAUDE.md were decided (owner-approved 2026-07-04):
@@ -25,6 +27,7 @@ Two long-standing "ask first" inconsistencies from CLAUDE.md were decided (owner
 | VM size | **Standard_B4ms (16 GB)** | Same burstable family (no southindia quota surprises); fits compose apps + monitoring + k3s on one box. |
 | Alerting channel | **Telegram bot** | Free instant push; Alertmanager/Uptime Kuma native, Azure action groups via webhook. |
 | License | **MIT** | The public mirror currently publishes unlicensed code. |
+| Persistence | **Managed disk (own RG) + restic → Blob Cool** | Block storage is the only safe home for live SQLite/Postgres; restic gives encrypted, deduplicated, versioned logical backups independent of any disk. Azure Files rejected for databases (SMB locking/corruption). |
 
 ## The 13 epics
 
@@ -36,7 +39,7 @@ Two long-standing "ask first" inconsistencies from CLAUDE.md were decided (owner
 | [#17](https://github.com/114snehasish/homelab-azure/issues/17) | E04 Self-hosted app portfolio | apps | 2–3 | Flex |
 | [#18](https://github.com/114snehasish/homelab-azure/issues/18) | E05 Key Vault secrets layer | security | 2 | Core |
 | [#19](https://github.com/114snehasish/homelab-azure/issues/19) | E06 Zero-trust access (Tailscale) | security | 2–3 | Core |
-| [#20](https://github.com/114snehasish/homelab-azure/issues/20) | E07 Backup & DR for the pet disk | resilience | 3 (early) | Core |
+| [#20](https://github.com/114snehasish/homelab-azure/issues/20) | E07 Backup & DR — **slimmed to crash-consistent disaster layer** (app-consistent backups moved to E15) | resilience | 3 (early) | Core |
 | [#21](https://github.com/114snehasish/homelab-azure/issues/21) | E08 Observability (Grafana stack + Azure Monitor) | observability | 3 | Core |
 | [#22](https://github.com/114snehasish/homelab-azure/issues/22) | E09 k3s + GitOps (Argo CD) | apps/platform | 3–4 | Core |
 | [#23](https://github.com/114snehasish/homelab-azure/issues/23) | E10 Cost governance & tagging | governance | 4 | Flex |
@@ -44,6 +47,7 @@ Two long-standing "ask first" inconsistencies from CLAUDE.md were decided (owner
 | [#25](https://github.com/114snehasish/homelab-azure/issues/25) | E12 Docs, architecture & ADRs | governance | 4 + rolling | Core (trimmed) |
 | [#26](https://github.com/114snehasish/homelab-azure/issues/26) | E13 AKS pilot | apps/platform | stretch | Stretch |
 | [#88](https://github.com/114snehasish/homelab-azure/issues/88) | E14 Ephemeral Claude Code agent runners on k3s | apps/platform | month 2 | Month-2 opener |
+| [#96](https://github.com/114snehasish/homelab-azure/issues/96) | E15 Persistent storage layer v2 + park/resume lifecycle | resilience/platform | 1–2 | **Core — exempt from the cut order** |
 
 ## Dependency graph
 
@@ -65,6 +69,9 @@ graph LR
   E09 --> E14[#88 Agent runners]
   E05 --> E14
   E08 --> E14
+  E01 --> E15[#96 Persistence v2 + park/resume]
+  E15 --> E03
+  E15 --> E07
   E10[#23 Cost governance]
   E12[#25 Docs and ADRs]
 ```
@@ -76,6 +83,8 @@ Sequencing rules that are **not optional**:
 - **E06 internal order is lockout-critical**: tailnet proven → CI on tailnet → break-glass exists → only then remove public SSH.
 - **Vaultwarden (#45) and k3s install (#68) are hard-blocked on the restore drill (#58).**
 - **Pre-op snapshot (#59) before every VM-recreating apply.**
+- **E15's disk migration + mount contract land before E03.3** — Caddy is the first thing to write real state to `/data`; moving a near-empty disk to the persist RG is trivial, moving a live one is surgery.
+- **Park = final restic backup → destroy `compute/vm` only.** Network RG, DNS zone, Key Vault, and the persist RG stay up (all near-free). Resume = apply `compute/vm` → mount guard verifies the disk → apps pick up where they left off, certs included (no ACME re-issuance).
 
 ## Risk register
 
@@ -92,10 +101,12 @@ Sequencing rules that are **not optional**:
 | R9 | Agent pods borrow the VM's managed identity via IMDS | #89 NetworkPolicy blocks 169.254.169.254 from the runner namespace |
 | R10 | Anthropic API spend invisible to Azure budgets | #93 console spend ceiling + monthly cost review |
 | R11 | Prompt injection via untrusted issue text | PR-only GitHub App, human-only merges, owner-applied trigger labels (#90–#92) |
+| R12 | Disk migration to the persist RG (snapshot-swap) corrupts/loses data | Done in E15.2 while the disk is near-empty, snapshot taken first, content verified after the swap |
+| R13 | restic repo password lost = all logical backups unreadable | Password in Key Vault (after E05) **plus** an offline copy; `restic check` runs weekly so rot is caught early |
 
 ## Capacity honesty & cut order
 
-Full scope is **13 epics / 60 PRs ≈ 90–120 hours** — more than a typical solo evenings-and-weekends month (50–70 h). Core = E01–E03, E05–E09 (+ E12.1/.2) ≈ 42 PRs, still ambitious.
+Full scope is **13 epics / 60 PRs ≈ 90–120 hours** — more than a typical solo evenings-and-weekends month (50–70 h). Core = E01–E03, E05–E09 (+ E12.1/.2) ≈ 42 PRs, still ambitious. **E15 adds ~7 PRs (~12–18 h) in weeks 1–2 and is exempt from the cut order** — persistence is the philosophy of the lab, and everything after it stands on it; if time is short, cut deeper into the flex epics instead.
 
 **Week-2 checkpoint question:** *"Are HTTPS apps live and OIDC done?"* If no — cut before adding, in this order:
 
@@ -105,6 +116,20 @@ Full scope is **13 epics / 60 PRs ≈ 90–120 hours** — more than a typical s
 4. Merge E08.6 into E08.2 (dashboards)
 5. Shrink E04 to it-tools only
 6. Slide E09.4/E09.5 to month 2 — *k3s installed + Argo CD syncing is a fine month-1 exit state*
+
+## E15 — Persistent storage layer v2 + park/resume lifecycle ([#96](https://github.com/114snehasish/homelab-azure/issues/96), weeks 1–2, added 2026-07-05)
+
+The epic that encodes the lab's philosophy. The current pet-disk solution (raw cloud-init bash, LUN discovery, format-if-unformatted as the only guard, disk sharing an RG with disposable resources, no logical backups, no k8s volume story) is replaced by a **tiered persistence architecture**:
+
+- **Tier 0 — always-on control (~free)**: tfstate (external), Key Vault, DNS zone, a new backup storage account.
+- **Tier 1 — hot block**: the pet disk, migrated via snapshot-swap into a dedicated **`homelab-persist-rg`** (nothing precious ever again shares an RG with anything destroyable), mounted through a **systemd mount contract with a data-guard** — docker refuses to start unless `/data` is verifiably the real disk. Holds live databases, app state, Prometheus/Loki history, Caddy certs/ACME account, and k3s PVs (`/data/k8s-pv` via local-path-provisioner).
+- **Tier 2 — cold logical**: **restic → Azure Blob (Cool tier)**, encrypted/deduplicated/versioned; nightly app-consistent backups (`sqlite3 .backup`, `pg_dump`) plus a final backup as the first act of every park. State remains inspectable and restorable even with zero compute.
+
+**Lifecycle workflows**: `park.yml` (dispatch-gated: final backup → verify → destroy `compute/vm` → cost summary) and `resume.yml` (apply → mount-guard check → app health check). The drill child proves a full park→resume cycle with data and certs intact and records the measured resume time and parked cost.
+
+Children (one PR each): **E15.1** [#97](https://github.com/114snehasish/homelab-azure/issues/97) ADR-0009 tiered persistence · **E15.2** [#98](https://github.com/114snehasish/homelab-azure/issues/98) persist RG + snapshot-swap disk migration + backup storage account (**R12** — the one dangerous op, done while the disk is near-empty) · **E15.3** [#99](https://github.com/114snehasish/homelab-azure/issues/99) mount contract v2 (VM recreate) · **E15.4** [#100](https://github.com/114snehasish/homelab-azure/issues/100) restic-to-blob service (repo password: GitHub secret interim → Key Vault after E05; **R13**) · **E15.5** [#101](https://github.com/114snehasish/homelab-azure/issues/101) park/resume workflows · **E15.6** [#102](https://github.com/114snehasish/homelab-azure/issues/102) full lifecycle drill + runbook · **E15.7** [#103](https://github.com/114snehasish/homelab-azure/issues/103) local-path-provisioner StorageClass (lands with E09).
+
+Interaction with E07: E07 narrows to the **crash-consistent disaster layer** (Backup vault, protect-disk, vault-restore drill, pre-op snapshots); its app-consistent SQLite child (#60) is superseded by E15.4.
 
 ## Month 2 preview — E14: ephemeral Claude Code agent runners ([#88](https://github.com/114snehasish/homelab-azure/issues/88))
 
