@@ -6,6 +6,8 @@
 
 Grow this five-module Terraform homelab into a **mini-enterprise** while learning DevOps, platform engineering, and app engineering. The platform journey is deliberately **simplest-first**: Docker-Compose-as-code → single-node k3s with GitOps → an AKS pilot (stretch). Pillar priority: **apps with HTTPS and real domains** → **security & identity** → **observability** → **resilience & governance**.
 
+**Multi-cloud direction (added 2026-07-07):** the lab expands beyond Azure. E16 replicates the current five-module Azure stack onto **GCP** (existing project, monthly credit) under a new `gcp/` tree — same Terraform/Cloudflare/GitHub-Actions stack, both clouds coexisting. Azure remains the deep enterprise track; GCP starts as a faithful replica and becomes the mix-and-match playground for future expansions. Future epics fan out per-cloud deliberately.
+
 **Operating model (clarified 2026-07-05): compute is ephemeral, storage is not.** The lab is not 24×7 — it runs in *experience cycles*: deploy everything, use it, then **park** it (final backup → destroy the VM, the only real cost driver). The only things that survive a cycle are the persistence layer (app data, databases, metrics/logs history, TLS certs) and the near-free control plane (tfstate, Key Vault, DNS zone, network RG). Parked cost target: **≤ ₹400/mo**. E15 exists to make this lifecycle first-class.
 
 ## Decisions made for this roadmap
@@ -48,6 +50,7 @@ Two long-standing "ask first" inconsistencies from CLAUDE.md were decided (owner
 | [#26](https://github.com/114snehasish/homelab-azure/issues/26) | E13 AKS pilot | apps/platform | stretch | Stretch |
 | [#88](https://github.com/114snehasish/homelab-azure/issues/88) | E14 Ephemeral Claude Code agent runners on k3s | apps/platform | month 2 | Month-2 opener |
 | [#96](https://github.com/114snehasish/homelab-azure/issues/96) | E15 Persistent storage layer v2 + park/resume lifecycle | resilience/platform | 1–2 | **Core — exempt from the cut order** |
+| [#105](https://github.com/114snehasish/homelab-azure/issues/105) | E16 GCP landing zone — multi-cloud replica | apps/platform | month 2 / parallel | Month-2 track (`cloud:gcp`) |
 
 ## Dependency graph
 
@@ -72,6 +75,7 @@ graph LR
   E01 --> E15[#96 Persistence v2 + park/resume]
   E15 --> E03
   E15 --> E07
+  E01 --> E16[#105 GCP landing zone]
   E10[#23 Cost governance]
   E12[#25 Docs and ADRs]
 ```
@@ -103,6 +107,9 @@ Sequencing rules that are **not optional**:
 | R11 | Prompt injection via untrusted issue text | PR-only GitHub App, human-only merges, owner-applied trigger labels (#90–#92) |
 | R12 | Disk migration to the persist RG (snapshot-swap) corrupts/loses data | Done in E15.2 while the disk is near-empty, snapshot taken first, content verified after the swap |
 | R13 | restic repo password lost = all logical backups unreadable | Password in Key Vault (after E05) **plus** an offline copy; `restic check` runs weekly so rot is caught early |
+| R14 | GCS state bucket lives inside the (existing, destroyable) GCP project | Bucket versioning ON, created out-of-band, never-touch discipline (#107); accepted residual risk |
+| R15 | GCP credit exhaustion/expiry mid-cycle | Billing budget alarm at the credit ceiling (#107); parkability is the backstop |
+| R16 | GCP zonal disk vs VM zone mismatch (attach failure) | One shared `zone` variable across `gcp/storage` and `gcp/vm` (#111/#112) |
 
 ## Capacity honesty & cut order
 
@@ -138,6 +145,14 @@ The month-2 opener extends the platform's philosophy one step further: cattle VM
 Children: [#89](https://github.com/114snehasish/homelab-azure/issues/89) ARC + IMDS-blocked runner pool · [#90](https://github.com/114snehasish/homelab-azure/issues/90) PR-only GitHub App + API key via KV + branch protection · [#91](https://github.com/114snehasish/homelab-azure/issues/91) `@claude` mention workflow · [#92](https://github.com/114snehasish/homelab-azure/issues/92) `agent:take` backlog worker · [#93](https://github.com/114snehasish/homelab-azure/issues/93) runbook/ADR/spend guardrails · [#94](https://github.com/114snehasish/homelab-azure/issues/94) read-only Azure identity (flex, after track record).
 
 Deliberately deferred to month 3: the event-driven ops responder (agent auto-fixing E11.2 drift issues and triaging Dependabot PRs) — it becomes a one-workflow addition once the agent has earned trust.
+
+## Multi-cloud — E16: GCP landing zone ([#105](https://github.com/114snehasish/homelab-azure/issues/105), month-2 / parallel track, added 2026-07-07)
+
+A faithful replica of the **current** Azure stack on GCP, inside the owner's **existing project and billing account** (monthly credit): custom-mode VPC + subnet 10.1.0.0/24 (asia-south1, non-overlapping with Azure) with an SSH firewall rule ≈ the NSG; Cloud DNS zone `gcp.snehasish-chakraborty.com` delegated from Cloudflare (twin of the `az` delegation); a 20GB zonal persistent pet disk; an e2-medium Ubuntu 24.04 VM running the same cloud-init (Docker + `/data` mount via the stable `/dev/disk/by-id/google-data` path) with DNS self-registration. CI authenticates via **Workload Identity Federation** (keyless from day one), state lives in a **versioned GCS bucket** in the project (out-of-band bootstrap; never-touch), and all five GCP workflows are dispatch-gated (the Azure auto-apply split is *not* replicated). Two Azure debts are knowingly replicated and flagged: the ipify firewall rule (dies with E06) and the raw cloud-init mount (upgraded when E15's contract fans out to GCP).
+
+Children: [#106](https://github.com/114snehasish/homelab-azure/issues/106) ADR-0011 · [#107](https://github.com/114snehasish/homelab-azure/issues/107) bootstrap (APIs, SA+WIF, state bucket, credit budget) · [#108](https://github.com/114snehasish/homelab-azure/issues/108) network · [#109](https://github.com/114snehasish/homelab-azure/issues/109) dns · [#110](https://github.com/114snehasish/homelab-azure/issues/110) cloudflare delegation · [#111](https://github.com/114snehasish/homelab-azure/issues/111) storage · [#112](https://github.com/114snehasish/homelab-azure/issues/112) vm · [#113](https://github.com/114snehasish/homelab-azure/issues/113) CI workflows · [#114](https://github.com/114snehasish/homelab-azure/issues/114) persistence drill + docs + credit-burn report.
+
+E16.1–E16.7 are independent of the Azure roadmap (pick up anytime as GCP learning); E16.8 prefers E01.3/.4's reusable workflow. Posture: park/resume parity — the GCP side is built parkable, and E15's lifecycle workflows gain a GCP leg in a later extension.
 
 ## Working agreement
 
