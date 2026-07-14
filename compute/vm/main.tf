@@ -84,9 +84,8 @@ resource "azurerm_linux_virtual_machine" "homelab_vm" {
   name                = "homelab-vm"
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
-  # tflint-ignore: azurerm_linux_virtual_machine_retired_size # resize to Standard_B4ms is tracked separately (issue #61, roadmap risk R1: OOM once monitoring/k3s land)
-  size           = "Standard_B2s"
-  admin_username = "azureuser"
+  size                = "Standard_B4ms"
+  admin_username      = "azureuser"
 
   network_interface_ids = [azurerm_network_interface.vm_nic.id]
 
