@@ -111,7 +111,7 @@ jobs:
           fi
 
       - name: Comment plan on PR
-        if: steps.plan.outcome != 'skipped' && github.event_name == 'pull_request'
+        if: "!cancelled() && steps.plan.outcome != 'skipped' && github.event_name == 'pull_request'"
         uses: actions/github-script@v7
         with:
           script: |
