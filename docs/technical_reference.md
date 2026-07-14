@@ -65,7 +65,7 @@ The bootstrapping script is designed to:
 
 ### Per-module pipelines
 
-Each module has its own workflow, runnable standalone (push with path filter, or manual dispatch) and callable as a reusable workflow (`workflow_call`):
+Each module has its own workflow, runnable standalone (push or pull_request with path filter, or manual dispatch) and callable as a reusable workflow (`workflow_call`):
 - **`deploy-network.yml`**: Deploys the backbone.
 - **`deploy-dns.yml`**: Creates the Azure DNS zone.
 - **`deploy-cloudflare.yml`**: Delegates the subdomain from Cloudflare to Azure DNS.
@@ -99,6 +99,17 @@ four variables below:
   `RESOURCE_GROUP_NAME` secret for `infra/dns` only, since `rg_name` is
   also declared (same default) by `infra/network`, `infra/storage`, and
   `compute/vm`.
+
+On `pull_request` events, `_terraform.yml` also posts the plan as a
+**sticky** PR comment (one comment per module, identified by a hidden
+`<!-- tf-plan: <working_directory> --> ` marker and updated in place on
+every push, rather than piling up a new comment each time) — so a PR
+touching several modules gets one comment per module, not one shared
+comment. `terraform apply` is structurally disabled on `pull_request`
+events regardless of the `apply` input, so PR runs only ever plan. The
+`infra/network` comment carries an extra note explaining that its NSG
+SSH-rule diff (see CLAUDE.md's ipify gotcha) is expected noise, not real
+drift, until #54 (E06.4) removes the ipify data source.
 
 ### Overall pipelines
 

@@ -17,6 +17,14 @@ on:
     paths:
       - 'infra/dns/**'
       - '.github/workflows/deploy-dns.yml'
+  pull_request:
+    paths:
+      - 'infra/dns/**'
+      - '.github/workflows/deploy-dns.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   terraform:
