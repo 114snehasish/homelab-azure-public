@@ -86,10 +86,15 @@ runs touching the same module's state queue instead of racing.
 Two per-module quirks are handled inside `_terraform.yml` with conditional
 steps keyed on `inputs.working_directory`, rather than the shared
 job-level `env:` block, since a static `env:` entry can't be scoped to one
-caller without leaking to the others:
+caller without leaking to the others — and, for credentials specifically,
+a static entry can silently win over a same-named value set later via
+`$GITHUB_ENV`, so there is no static fallback declared at all for the
+four variables below:
 - `infra/dns` and `infra/cloudflare` authenticate with the `AZURE_*`
-  secrets rather than `ARM_*` (see CLAUDE.md); retiring that split is
-  tracked separately (E02.4).
+  secrets rather than `ARM_*` (see CLAUDE.md) via a dedicated `$GITHUB_ENV`
+  step, mutually exclusive with the one that sets `ARM_*` for
+  network/storage/compute; retiring that split is tracked separately
+  (E02.4).
 - `infra/dns`'s `rg_name` variable is populated from the
   `RESOURCE_GROUP_NAME` secret for `infra/dns` only, since `rg_name` is
   also declared (same default) by `infra/network`, `infra/storage`, and

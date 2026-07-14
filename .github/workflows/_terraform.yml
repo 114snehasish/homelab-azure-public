@@ -26,10 +26,6 @@ jobs:
       group: tf-${{ inputs.working_directory }}
       cancel-in-progress: false
     env:
-      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
       # Serves compute/vm's dns_zone_name/dns_rg_name (self-registered DNS
       # A-record); infra/dns's own dns_zone_name variable happens to share
       # the first name too. Do not remove.
@@ -46,13 +42,21 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # ARM_* auth is set entirely via $GITHUB_ENV, not a static env:
+      # entry, so there's exactly one unambiguous source per run instead
+      # of a static value that a later override could silently lose to.
+      # network/storage/compute use the ARM_* secrets.
+      - name: Use ARM_* credentials
+        if: inputs.working_directory != 'infra/dns' && inputs.working_directory != 'infra/cloudflare'
+        run: |
+          echo "ARM_CLIENT_ID=${{ secrets.ARM_CLIENT_ID }}" >> "$GITHUB_ENV"
+          echo "ARM_CLIENT_SECRET=${{ secrets.ARM_CLIENT_SECRET }}" >> "$GITHUB_ENV"
+          echo "ARM_SUBSCRIPTION_ID=${{ secrets.ARM_SUBSCRIPTION_ID }}" >> "$GITHUB_ENV"
+          echo "ARM_TENANT_ID=${{ secrets.ARM_TENANT_ID }}" >> "$GITHUB_ENV"
+
       # infra/dns and infra/cloudflare authenticate with the AZURE_*
-      # secrets, not ARM_* (retiring that split is tracked separately,
-      # E02.4). A static env: entry can't be conditionally unset per
-      # caller, so this step only runs for those two callers and overrides
-      # the job-level ARM_* values via $GITHUB_ENV for the rest of the
-      # job; network/storage/compute are unaffected since the step is
-      # skipped for them.
+      # secrets instead (retiring that split is tracked separately,
+      # E02.4).
       - name: Use AZURE_* credentials for dns/cloudflare
         if: inputs.working_directory == 'infra/dns' || inputs.working_directory == 'infra/cloudflare'
         run: |
