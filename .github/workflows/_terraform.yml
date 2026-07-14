@@ -18,6 +18,10 @@ on:
         type: string
         default: ''
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   terraform:
     name: Terraform
@@ -96,15 +100,89 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
+        id: plan
         working-directory: ${{ inputs.working_directory }}
         run: |
+          set -o pipefail
           if [ -n "${{ inputs.ssh_source_ip }}" ]; then
-            terraform plan -var="ssh_source_ip=${{ inputs.ssh_source_ip }}" -out=tfplan
+            terraform plan -no-color -var="ssh_source_ip=${{ inputs.ssh_source_ip }}" -out=tfplan 2>&1 | tee plan_output.txt
           else
-            terraform plan -out=tfplan
+            terraform plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
           fi
 
+      - name: Comment plan on PR
+        if: "!cancelled() && steps.plan.outcome != 'skipped' && github.event_name == 'pull_request'"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const workingDir = '${{ inputs.working_directory }}';
+            const marker = `<!-- tf-plan: ${workingDir} -->`;
+            const planFailed = '${{ steps.plan.outcome }}' !== 'success';
+
+            let planText = fs.readFileSync(path.join(workingDir, 'plan_output.txt'), 'utf8');
+            const maxLen = 60000;
+            let truncated = false;
+            if (planText.length > maxLen) {
+              planText = planText.slice(0, maxLen);
+              truncated = true;
+            }
+
+            // infra/network's SSH NSG rule is whitelisted to whatever IP ran
+            // `plan` (fetched live from api.ipify.org), so local and CI plans
+            // always disagree here until #54 (E06.4) removes the ipify data
+            // source. Flag it so reviewers don't read it as real drift.
+            const noise = workingDir === 'infra/network'
+              ? '\n> **Known noise:** the NSG SSH rule diff reflects the ' +
+                'plan runner\'s public IP (fetched live from api.ipify.org). ' +
+                'Local and CI plans always disagree here until #54 (E06.4) ' +
+                'lands — this is not real drift.\n'
+              : '';
+
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const body = [
+              `#### Terraform Plan — \`${workingDir}\`` + (planFailed ? ' — plan failed' : ''),
+              marker,
+              noise,
+              planFailed ? '\n**Plan failed** — see the output below.\n' : '',
+              '<details><summary>Show plan</summary>',
+              '',
+              '```diff',
+              planText + (truncated ? '\n... (truncated)' : ''),
+              '```',
+              '</details>',
+              '',
+              `*Workflow run: [${context.workflow} #${context.runNumber}](${runUrl})*`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+            }
+
       - name: Terraform Apply
-        if: inputs.apply == true
+        if: inputs.apply == true && github.event_name != 'pull_request'
         working-directory: ${{ inputs.working_directory }}
         run: terraform apply -auto-approve tfplan
