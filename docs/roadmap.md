@@ -1,6 +1,6 @@
 # Roadmap — Month 1: Homelab → Mini-Enterprise
 
-> Planned 2026-07-04. Tracked as GitHub epics [#14](https://github.com/114snehasish/homelab-azure/issues/14)–[#26](https://github.com/114snehasish/homelab-azure/issues/26), each with one child issue per PR (sub-issues). This document is the narrative; the issues are the work.
+> Planned 2026-07-04. Tracked as GitHub epics [#14](https://github.com/114snehasish/homelab/issues/14)–[#26](https://github.com/114snehasish/homelab/issues/26), each with one child issue per PR (sub-issues). This document is the narrative; the issues are the work.
 
 ## Vision
 
@@ -35,22 +35,22 @@ Two long-standing "ask first" inconsistencies from CLAUDE.md were decided (owner
 
 | Epic | Title | Pillar | Week | Tier |
 |---|---|---|---|---|
-| [#14](https://github.com/114snehasish/homelab-azure/issues/14) | E01 CI & repo hardening | security (enabler) | 1 | Core |
-| [#15](https://github.com/114snehasish/homelab-azure/issues/15) | E02 OIDC federated identity for CI | security | 1 | Core |
-| [#16](https://github.com/114snehasish/homelab-azure/issues/16) | E03 HTTPS ingress + first apps (compose-as-code) | apps | 1–2 | Core |
-| [#17](https://github.com/114snehasish/homelab-azure/issues/17) | E04 Self-hosted app portfolio | apps | 2–3 | Flex |
-| [#18](https://github.com/114snehasish/homelab-azure/issues/18) | E05 Key Vault secrets layer | security | 2 | Core |
-| [#19](https://github.com/114snehasish/homelab-azure/issues/19) | E06 Zero-trust access (Tailscale) | security | 2–3 | Core |
-| [#20](https://github.com/114snehasish/homelab-azure/issues/20) | E07 Backup & DR — **slimmed to crash-consistent disaster layer** (app-consistent backups moved to E15) | resilience | 3 (early) | Core |
-| [#21](https://github.com/114snehasish/homelab-azure/issues/21) | E08 Observability (Grafana stack + Azure Monitor) | observability | 3 | Core |
-| [#22](https://github.com/114snehasish/homelab-azure/issues/22) | E09 k3s + GitOps (Argo CD) | apps/platform | 3–4 | Core |
-| [#23](https://github.com/114snehasish/homelab-azure/issues/23) | E10 Cost governance & tagging | governance | 4 | Flex |
-| [#24](https://github.com/114snehasish/homelab-azure/issues/24) | E11 Drift detection & ops automation | governance | 4 | Flex |
-| [#25](https://github.com/114snehasish/homelab-azure/issues/25) | E12 Docs, architecture & ADRs | governance | 4 + rolling | Core (trimmed) |
-| [#26](https://github.com/114snehasish/homelab-azure/issues/26) | E13 AKS pilot | apps/platform | stretch | Stretch |
-| [#88](https://github.com/114snehasish/homelab-azure/issues/88) | E14 Ephemeral Claude Code agent runners on k3s | apps/platform | month 2 | Month-2 opener |
-| [#96](https://github.com/114snehasish/homelab-azure/issues/96) | E15 Persistent storage layer v2 + park/resume lifecycle | resilience/platform | 1–2 | **Core — exempt from the cut order** |
-| [#105](https://github.com/114snehasish/homelab-azure/issues/105) | E16 GCP landing zone — multi-cloud replica | apps/platform | month 2 / parallel | Month-2 track (`cloud:gcp`) |
+| [#14](https://github.com/114snehasish/homelab/issues/14) | E01 CI & repo hardening | security (enabler) | 1 | Core |
+| [#15](https://github.com/114snehasish/homelab/issues/15) | E02 OIDC federated identity for CI | security | 1 | Core |
+| [#16](https://github.com/114snehasish/homelab/issues/16) | E03 HTTPS ingress + first apps (compose-as-code) | apps | 1–2 | Core |
+| [#17](https://github.com/114snehasish/homelab/issues/17) | E04 Self-hosted app portfolio | apps | 2–3 | Flex |
+| [#18](https://github.com/114snehasish/homelab/issues/18) | E05 Key Vault secrets layer | security | 2 | Core |
+| [#19](https://github.com/114snehasish/homelab/issues/19) | E06 Zero-trust access (Tailscale) | security | 2–3 | Core |
+| [#20](https://github.com/114snehasish/homelab/issues/20) | E07 Backup & DR — **slimmed to crash-consistent disaster layer** (app-consistent backups moved to E15) | resilience | 3 (early) | Core |
+| [#21](https://github.com/114snehasish/homelab/issues/21) | E08 Observability (Grafana stack + Azure Monitor) | observability | 3 | Core |
+| [#22](https://github.com/114snehasish/homelab/issues/22) | E09 k3s + GitOps (Argo CD) | apps/platform | 3–4 | Core |
+| [#23](https://github.com/114snehasish/homelab/issues/23) | E10 Cost governance & tagging | governance | 4 | Flex |
+| [#24](https://github.com/114snehasish/homelab/issues/24) | E11 Drift detection & ops automation | governance | 4 | Flex |
+| [#25](https://github.com/114snehasish/homelab/issues/25) | E12 Docs, architecture & ADRs | governance | 4 + rolling | Core (trimmed) |
+| [#26](https://github.com/114snehasish/homelab/issues/26) | E13 AKS pilot | apps/platform | stretch | Stretch |
+| [#88](https://github.com/114snehasish/homelab/issues/88) | E14 Ephemeral Claude Code agent runners on k3s | apps/platform | month 2 | Month-2 opener |
+| [#96](https://github.com/114snehasish/homelab/issues/96) | E15 Persistent storage layer v2 + park/resume lifecycle | resilience/platform | 1–2 | **Core — exempt from the cut order** |
+| [#105](https://github.com/114snehasish/homelab/issues/105) | E16 GCP landing zone — multi-cloud replica | apps/platform | month 2 / parallel | Month-2 track (`cloud:gcp`) |
 
 ## Dependency graph
 
@@ -124,7 +124,7 @@ Full scope is **13 epics / 60 PRs ≈ 90–120 hours** — more than a typical s
 5. Shrink E04 to it-tools only
 6. Slide E09.4/E09.5 to month 2 — *k3s installed + Argo CD syncing is a fine month-1 exit state*
 
-## E15 — Persistent storage layer v2 + park/resume lifecycle ([#96](https://github.com/114snehasish/homelab-azure/issues/96), weeks 1–2, added 2026-07-05)
+## E15 — Persistent storage layer v2 + park/resume lifecycle ([#96](https://github.com/114snehasish/homelab/issues/96), weeks 1–2, added 2026-07-05)
 
 The epic that encodes the lab's philosophy. The current pet-disk solution (raw cloud-init bash, LUN discovery, format-if-unformatted as the only guard, disk sharing an RG with disposable resources, no logical backups, no k8s volume story) is replaced by a **tiered persistence architecture**:
 
@@ -134,23 +134,23 @@ The epic that encodes the lab's philosophy. The current pet-disk solution (raw c
 
 **Lifecycle workflows**: `park.yml` (dispatch-gated: final backup → verify → destroy `compute/vm` → cost summary) and `resume.yml` (apply → mount-guard check → app health check). The drill child proves a full park→resume cycle with data and certs intact and records the measured resume time and parked cost.
 
-Children (one PR each): **E15.1** [#97](https://github.com/114snehasish/homelab-azure/issues/97) ADR-0009 tiered persistence · **E15.2** [#98](https://github.com/114snehasish/homelab-azure/issues/98) persist RG + snapshot-swap disk migration + backup storage account (**R12** — the one dangerous op, done while the disk is near-empty) · **E15.3** [#99](https://github.com/114snehasish/homelab-azure/issues/99) mount contract v2 (VM recreate) · **E15.4** [#100](https://github.com/114snehasish/homelab-azure/issues/100) restic-to-blob service (repo password: GitHub secret interim → Key Vault after E05; **R13**) · **E15.5** [#101](https://github.com/114snehasish/homelab-azure/issues/101) park/resume workflows · **E15.6** [#102](https://github.com/114snehasish/homelab-azure/issues/102) full lifecycle drill + runbook · **E15.7** [#103](https://github.com/114snehasish/homelab-azure/issues/103) local-path-provisioner StorageClass (lands with E09).
+Children (one PR each): **E15.1** [#97](https://github.com/114snehasish/homelab/issues/97) ADR-0009 tiered persistence · **E15.2** [#98](https://github.com/114snehasish/homelab/issues/98) persist RG + snapshot-swap disk migration + backup storage account (**R12** — the one dangerous op, done while the disk is near-empty) · **E15.3** [#99](https://github.com/114snehasish/homelab/issues/99) mount contract v2 (VM recreate) · **E15.4** [#100](https://github.com/114snehasish/homelab/issues/100) restic-to-blob service (repo password: GitHub secret interim → Key Vault after E05; **R13**) · **E15.5** [#101](https://github.com/114snehasish/homelab/issues/101) park/resume workflows · **E15.6** [#102](https://github.com/114snehasish/homelab/issues/102) full lifecycle drill + runbook · **E15.7** [#103](https://github.com/114snehasish/homelab/issues/103) local-path-provisioner StorageClass (lands with E09).
 
 Interaction with E07: E07 narrows to the **crash-consistent disaster layer** (Backup vault, protect-disk, vault-restore drill, pre-op snapshots); its app-consistent SQLite child (#60) is superseded by E15.4.
 
-## Month 2 preview — E14: ephemeral Claude Code agent runners ([#88](https://github.com/114snehasish/homelab-azure/issues/88))
+## Month 2 preview — E14: ephemeral Claude Code agent runners ([#88](https://github.com/114snehasish/homelab/issues/88))
 
 The month-2 opener extends the platform's philosophy one step further: cattle VM, pet disk, **mayfly agents**. AI agent sessions run as ephemeral actions-runner-controller (ARC) pods on k3s — created per task, destroyed after, nothing persisting outside git/GitHub. Triggered by `@claude` mentions and an `agent:take` backlog label; authenticated with an Anthropic API key from Key Vault; strictly **PR-only** (the agent can never merge and holds no Azure credentials — its PRs pass the same CI gates as human ones). Hard-gated on E09 (k3s + Argo CD + external-secrets), consuming E05 (secrets), E08 (session logs in Loki), and E01 (branch protection).
 
-Children: [#89](https://github.com/114snehasish/homelab-azure/issues/89) ARC + IMDS-blocked runner pool · [#90](https://github.com/114snehasish/homelab-azure/issues/90) PR-only GitHub App + API key via KV + branch protection · [#91](https://github.com/114snehasish/homelab-azure/issues/91) `@claude` mention workflow · [#92](https://github.com/114snehasish/homelab-azure/issues/92) `agent:take` backlog worker · [#93](https://github.com/114snehasish/homelab-azure/issues/93) runbook/ADR/spend guardrails · [#94](https://github.com/114snehasish/homelab-azure/issues/94) read-only Azure identity (flex, after track record).
+Children: [#89](https://github.com/114snehasish/homelab/issues/89) ARC + IMDS-blocked runner pool · [#90](https://github.com/114snehasish/homelab/issues/90) PR-only GitHub App + API key via KV + branch protection · [#91](https://github.com/114snehasish/homelab/issues/91) `@claude` mention workflow · [#92](https://github.com/114snehasish/homelab/issues/92) `agent:take` backlog worker · [#93](https://github.com/114snehasish/homelab/issues/93) runbook/ADR/spend guardrails · [#94](https://github.com/114snehasish/homelab/issues/94) read-only Azure identity (flex, after track record).
 
 Deliberately deferred to month 3: the event-driven ops responder (agent auto-fixing E11.2 drift issues and triaging Dependabot PRs) — it becomes a one-workflow addition once the agent has earned trust.
 
-## Multi-cloud — E16: GCP landing zone ([#105](https://github.com/114snehasish/homelab-azure/issues/105), month-2 / parallel track, added 2026-07-07)
+## Multi-cloud — E16: GCP landing zone ([#105](https://github.com/114snehasish/homelab/issues/105), month-2 / parallel track, added 2026-07-07)
 
 A faithful replica of the **current** Azure stack on GCP, inside the owner's **existing project and billing account** (monthly credit): custom-mode VPC + subnet 10.1.0.0/24 (asia-south1, non-overlapping with Azure) with an SSH firewall rule ≈ the NSG; Cloud DNS zone `gcp.snehasish-chakraborty.com` delegated from Cloudflare (twin of the `az` delegation); a 20GB zonal persistent pet disk; an e2-medium Ubuntu 24.04 VM running the same cloud-init (Docker + `/data` mount via the stable `/dev/disk/by-id/google-data` path) with DNS self-registration. CI authenticates via **Workload Identity Federation** (keyless from day one), state lives in a **versioned GCS bucket** in the project (out-of-band bootstrap; never-touch), and all five GCP workflows are dispatch-gated (the Azure auto-apply split is *not* replicated). Two Azure debts are knowingly replicated and flagged: the ipify firewall rule (dies with E06) and the raw cloud-init mount (upgraded when E15's contract fans out to GCP).
 
-Children: [#106](https://github.com/114snehasish/homelab-azure/issues/106) ADR-0011 · [#107](https://github.com/114snehasish/homelab-azure/issues/107) bootstrap (APIs, SA+WIF, state bucket, credit budget) · [#108](https://github.com/114snehasish/homelab-azure/issues/108) network · [#109](https://github.com/114snehasish/homelab-azure/issues/109) dns · [#110](https://github.com/114snehasish/homelab-azure/issues/110) cloudflare delegation · [#111](https://github.com/114snehasish/homelab-azure/issues/111) storage · [#112](https://github.com/114snehasish/homelab-azure/issues/112) vm · [#113](https://github.com/114snehasish/homelab-azure/issues/113) CI workflows · [#114](https://github.com/114snehasish/homelab-azure/issues/114) persistence drill + docs + credit-burn report.
+Children: [#106](https://github.com/114snehasish/homelab/issues/106) ADR-0011 · [#107](https://github.com/114snehasish/homelab/issues/107) bootstrap (APIs, SA+WIF, state bucket, credit budget) · [#108](https://github.com/114snehasish/homelab/issues/108) network · [#109](https://github.com/114snehasish/homelab/issues/109) dns · [#110](https://github.com/114snehasish/homelab/issues/110) cloudflare delegation · [#111](https://github.com/114snehasish/homelab/issues/111) storage · [#112](https://github.com/114snehasish/homelab/issues/112) vm · [#113](https://github.com/114snehasish/homelab/issues/113) CI workflows · [#114](https://github.com/114snehasish/homelab/issues/114) persistence drill + docs + credit-burn report.
 
 E16.1–E16.7 are independent of the Azure roadmap (pick up anytime as GCP learning); E16.8 prefers E01.3/.4's reusable workflow. Posture: park/resume parity — the GCP side is built parkable, and E15's lifecycle workflows gain a GCP leg in a later extension.
 
